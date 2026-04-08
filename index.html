@@ -1,0 +1,844 @@
+
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>[CH6] 抗原與抗體反應 - 課後測驗系統</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        medical: {
+                            light: '#f0f9ff', // sky-50
+                            DEFAULT: '#0ea5e9', // sky-500
+                            dark: '#0369a1', // sky-700
+                            gray: '#f8fafc', // slate-50
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* 自訂一些簡單的過渡動畫 */
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        /* 隱藏捲軸但保留捲動功能(提升美觀) */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="bg-medical-gray text-slate-800 font-sans min-h-screen flex flex-col antialiased">
+
+    <!-- 頂部導航列 -->
+    <header class="bg-white shadow-sm sticky top-0 z-10">
+        <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <svg class="w-6 h-6 text-medical" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                <h1 class="text-lg md:text-xl font-bold text-medical-dark">[CH6] 抗原與抗體反應</h1>
+            </div>
+            <div id="header-user-info" class="hidden text-sm md:text-base font-medium text-slate-600 bg-medical-light px-3 py-1 rounded-full border border-sky-100">
+                <span id="display-header-bank" class="text-medical-dark font-bold mr-1"></span>
+                <span id="display-header-name"></span> (<span id="display-header-id"></span>)
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-4xl mx-auto w-full p-4 md:p-6 flex flex-col justify-center">
+        
+        <!-- 1. 登入區塊 -->
+        <section id="login-section" class="bg-white rounded-2xl shadow-lg p-6 md:p-10 w-full max-w-md mx-auto fade-in">
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-medical-light text-medical mb-4">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                </div>
+                <h2 class="text-2xl font-bold text-slate-800">隨堂測驗登入</h2>
+                <p class="text-slate-500 mt-2 text-sm">請輸入您的基本資料以開始測驗</p>
+            </div>
+            <form id="login-form" class="space-y-5">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">選擇測驗題庫</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <label class="cursor-pointer">
+                            <input type="radio" name="quiz-bank" value="course" checked class="peer sr-only">
+                            <div class="text-center px-4 py-3 rounded-lg border border-slate-300 peer-checked:bg-medical-light peer-checked:border-medical peer-checked:text-medical-dark peer-checked:ring-2 peer-checked:ring-medical font-medium transition-colors">課程測驗</div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="quiz-bank" value="advanced" class="peer sr-only">
+                            <div class="text-center px-4 py-3 rounded-lg border border-slate-300 peer-checked:bg-medical-light peer-checked:border-medical peer-checked:text-medical-dark peer-checked:ring-2 peer-checked:ring-medical font-medium transition-colors">進階測驗</div>
+                        </label>
+                    </div>
+                </div>
+                <div>
+                    <label for="student-name" class="block text-sm font-medium text-slate-700 mb-1">姓名</label>
+                    <input type="text" id="student-name" required placeholder="請輸入姓名" class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-medical focus:border-medical transition-colors outline-none">
+                </div>
+                <div>
+                    <label for="student-id" class="block text-sm font-medium text-slate-700 mb-1">學號</label>
+                    <input type="text" id="student-id" required placeholder="請輸入學號" class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-medical focus:border-medical transition-colors outline-none">
+                </div>
+                <button type="submit" class="w-full bg-medical hover:bg-medical-dark text-white font-bold py-3 px-4 rounded-lg transition-colors shadow-md hover:shadow-lg mt-4">
+                    開始測驗
+                </button>
+            </form>
+        </section>
+
+        <!-- 2. 測驗區塊 -->
+        <section id="quiz-section" class="hidden bg-white rounded-2xl shadow-lg p-6 md:p-10 w-full fade-in flex-grow flex flex-col">
+            <div class="flex justify-between items-center mb-6 border-b border-slate-100 pb-4">
+                <span id="quiz-mode-badge" class="bg-indigo-100 text-indigo-700 text-xs font-bold px-3 py-1 rounded-full">完整測驗</span>
+                <div class="text-slate-500 font-medium tracking-wide">
+                    進度 <span id="current-question-num" class="text-medical font-bold text-lg">1</span> / <span id="total-question-num">15</span>
+                </div>
+            </div>
+
+            <div class="flex-grow flex flex-col justify-center">
+                <h3 id="question-text" class="text-xl md:text-2xl font-bold text-slate-800 leading-relaxed mb-8">
+                    <!-- 題目內容 -->
+                </h3>
+
+                <div id="options-container" class="space-y-3">
+                    <!-- 選項將透過 JS 動態產生 -->
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. 結算與解析區塊 -->
+        <section id="result-section" class="hidden w-full fade-in pb-10">
+            <!-- 結算卡片 -->
+            <div class="bg-white rounded-2xl shadow-lg p-6 md:p-10 mb-8 border-t-4 border-medical">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                    <div>
+                        <div class="flex items-center gap-3 mb-2 flex-wrap">
+                            <span id="result-bank-tag" class="bg-medical-light text-medical-dark border border-medical text-xs font-bold px-3 py-1 rounded-full"></span>
+                            <span id="result-mode-tag" class="bg-indigo-100 text-indigo-700 text-xs font-bold px-3 py-1 rounded-full">完整測驗得分</span>
+                            <span id="result-count-tag" class="bg-amber-100 text-amber-700 text-xs font-bold px-3 py-1 rounded-full">測驗次數：第 1 次</span>
+                        </div>
+                        <h2 class="text-slate-500 text-lg mb-1">護理科 / 學號：<span id="result-id" class="font-mono font-medium text-slate-700"></span></h2>
+                        <div class="flex items-baseline gap-4 mt-2">
+                            <h1 id="result-name" class="text-6xl font-black text-slate-800 tracking-tight">姓名</h1>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center bg-medical-light p-6 rounded-2xl border border-sky-100 min-w-[180px]">
+                        <div class="text-sm font-bold text-medical-dark mb-1">最終總得分</div>
+                        <div class="flex items-baseline justify-center gap-1">
+                            <span id="result-score" class="text-6xl font-black text-medical">100</span>
+                            <span class="text-xl font-bold text-medical-dark">分</span>
+                        </div>
+                        <div class="mt-2 text-sm text-slate-600 font-medium">
+                            答對 <span id="result-correct-count" class="text-emerald-600 font-bold"></span> / 答錯 <span id="result-wrong-count" class="text-rose-600 font-bold"></span>
+                        </div>
+                        <!-- API 傳送狀態顯示區 -->
+                        <div id="upload-status" class="mt-3 text-xs font-medium bg-white py-1 px-2 rounded-md shadow-sm hidden">
+                            <!-- 狀態動態生成 -->
+                        </div>
+                    </div>
+                </div>
+
+                <div id="encouragement-msg" class="mt-8 p-4 bg-slate-50 rounded-xl text-center text-lg font-bold text-slate-700 border border-slate-200">
+                    <!-- 鼓勵語 -->
+                </div>
+
+                <div class="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
+                    <button id="btn-go-home" class="flex-1 max-w-xs justify-center items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-3 px-6 rounded-xl transition-colors">
+                        <svg class="w-5 h-5 inline-block -mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                        回首頁切換題庫
+                    </button>
+                    <button id="btn-retry-wrong" class="hidden flex-1 max-w-xs justify-center items-center gap-2 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 font-bold py-3 px-6 rounded-xl transition-colors">
+                        <svg class="w-5 h-5 inline-block -mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                        錯題重做
+                    </button>
+                    <button id="btn-restart-full" class="flex-1 max-w-xs justify-center items-center gap-2 bg-medical hover:bg-medical-dark text-white font-bold py-3 px-6 rounded-xl transition-colors shadow-md">
+                        <svg class="w-5 h-5 inline-block -mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path></svg>
+                        重新完整測驗
+                    </button>
+                </div>
+            </div>
+
+            <!-- 錯題解析列表 -->
+            <div id="wrong-questions-container" class="hidden">
+                <div class="flex items-center gap-2 mb-4 px-2">
+                    <svg class="w-6 h-6 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                    <h3 class="text-xl font-bold text-slate-800">錯題精闢解析</h3>
+                </div>
+                <div id="wrong-questions-list" class="space-y-4">
+                    <!-- 解析內容由 JS 動態產生 -->
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="text-center py-4 text-slate-400 text-sm">
+        &copy; 護理科免疫學測驗系統
+    </footer>
+
+    <script>
+        // ==========================================
+        // ★ Google Sheets API 設定區 (請填入您的網址)
+        // ==========================================
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbynwZuEMMSk-XRGx8Xx0Ab1vKW1SkgY6flqDfuT5TPeGLtW7Qut4V83Yz9GT5wnUa0L/exec'; // 範例：'https://script.google.com/macros/s/AKfycby.../exec'
+
+
+        /**
+         * 測驗題庫資料
+         */
+        const ADVANCED_QUESTIONS = [
+            {
+                q: "半抗原：1多半不是蛋白質 2可與完全抗原所產生之抗體起反應 3與蛋白質結合可形成完全抗原 4進入體內後可產生抗體？",
+                opts: ["123", "234", "134", "124"],
+                ansIndex: 0,
+                exp: "💡 核心判斷：半抗原「有反應性，但單獨通常沒有免疫原性」。\n✅ 1、2、3都正確。\n❌ 4錯，半抗原單獨進入體內通常不能有效產生抗體。"
+            },
+            {
+                q: "下列何種物質具有較強的抗原性，能引起較佳之免疫反應？",
+                opts: ["分子量大的核酸", "分子量小的脂肪", "分子量大的蛋白質", "分子量小的醣類"],
+                ansIndex: 2,
+                exp: "💡 核心判斷：高分子、構造複雜的蛋白質最容易引發免疫反應。\n✅ 大分子蛋白質抗原性最強。\n❌ 核酸、脂肪、醣類抗原性通常較弱。"
+            },
+            {
+                q: "刺激免疫系統產生免疫力的物質稱為？",
+                opts: ["抗體", "抗原", "淋巴球", "白血球"],
+                ansIndex: 1,
+                exp: "💡 核心判斷：引發免疫反應的是抗原，不是抗體。\n✅ 抗原會刺激免疫系統。\n❌ 抗體是反應後產生的結果。"
+            },
+            {
+                q: "一般成人體內含量最高的免疫球蛋白是？",
+                opts: ["IgG", "IgA", "IgD", "IgE"],
+                ansIndex: 0,
+                exp: "💡 核心判斷：看到「血清中最多」就選IgG。\n✅ IgG為血清中含量最高的主力抗體。"
+            },
+            {
+                q: "在免疫球蛋白中，半衰期最長，可達約三星期的是哪一種？",
+                opts: ["IgM", "IgG", "IgA", "IgE"],
+                ansIndex: 1,
+                exp: "💡 核心判斷：半衰期最長的Ig就是IgG，約21天左右。"
+            },
+            {
+                q: "下列何種免疫球蛋白可以通過胎盤，由母親傳給胎兒？",
+                opts: ["IgA", "IgD", "IgE", "IgG"],
+                ansIndex: 3,
+                exp: "💡 核心判斷：看到「通過胎盤」直接想到IgG。\n✅ IgG分子較小且具特定受體，是唯一能通過胎盤提供胎兒被動免疫的抗體。"
+            },
+            {
+                q: "母乳中的抗體不會被嬰兒消化道中的酵素分解，其原因為何？",
+                opts: ["由於此抗體來自親系，故不會被嬰兒排斥", "因乳汁中的IgA抗體結構特別，能抵抗消化酵素分解", "因嬰兒酵素尚未成熟，故不會分解抗體", "由於乳汁中有特殊物質，會中和消化酵素的作用"],
+                ansIndex: 1,
+                exp: "💡 核心判斷：母乳抗體能撐過消化道，關鍵是「分泌型IgA」的特殊構造。\n✅ 分泌型IgA含有分泌片(secretory component)，能保護抗體免受消化酵素破壞。"
+            },
+            {
+                q: "黏膜部位的漿細胞製造的最主要抗體種類為：",
+                opts: ["IgM", "IgG", "IgA", "IgE"],
+                ansIndex: 2,
+                exp: "💡 核心判斷：看到黏膜、分泌液、局部防禦，多半選IgA。"
+            },
+            {
+                q: "眼淚、唾液、臍帶血及腸液四種體液中，何者所含有之抗體種類與其他三種不同？",
+                opts: ["眼淚", "唾液", "臍帶血", "腸液"],
+                ansIndex: 2,
+                exp: "💡 核心判斷：分泌液(眼淚/唾液/腸液)多是IgA，臍帶血特別是來自母體的IgG。\n✅ 臍帶血以IgG為主，其他三者均以分泌型IgA為主。"
+            },
+            {
+                q: "下列何種抗體具有最強的凝集作用，為較好的凝集素？",
+                opts: ["IgA", "IgD", "IgG", "IgM"],
+                ansIndex: 3,
+                exp: "💡 核心判斷：看到「最強凝集」就選IgM。\n✅ IgM為五聚體，具有10個抗原結合位，凝集效果最強。"
+            },
+            {
+                q: "免疫系統初次遇見外來蛋白質會產生IgM抗體來反應，此IgM抗體在分子結構上為何種模式？",
+                opts: ["單體", "雙體", "三體", "五合體"],
+                ansIndex: 3,
+                exp: "💡 核心判斷：分泌型IgM的招牌結構就是五合體(五聚體)。"
+            },
+            {
+                q: "有關抗體IgM之敘述，下列何者錯誤？",
+                opts: ["可以活化補體", "為一種五聯體分子", "是分子量最大之抗體", "被感染後最晚出現的抗體"],
+                ansIndex: 3,
+                exp: "💡 核心判斷：IgM的特色是「大、早、會凝集、會活化補體」。\n❌ 錯誤選項：IgM是初次免疫反應中「最早」出現的抗體，不是最晚。"
+            },
+            {
+                q: "一個抗體的基本構造具有哪些蛋白質鏈？",
+                opts: ["兩條重鏈", "兩條輕鏈", "兩條重鏈與兩條輕鏈", "一條重鏈與一條輕鏈"],
+                ansIndex: 2,
+                exp: "💡 核心判斷：抗體單體基本骨架就是 2條重鏈(H) 加上 2條輕鏈(L)。"
+            },
+            {
+                q: "一個IgG分子是由幾條胜肽鏈結合而成的？",
+                opts: ["二條", "四條", "六條", "八條"],
+                ansIndex: 1,
+                exp: "💡 核心判斷：IgG是典型的單體抗體，結構為2條重鏈+2條輕鏈，總共4條胜肽鏈。"
+            },
+            {
+                q: "一個抗體分子有幾個抗原結合部位？",
+                opts: ["1個", "2個", "3個", "4個"],
+                ansIndex: 1,
+                exp: "💡 核心判斷：標準單體抗體(如IgG)呈Y字型，具有2個抗原結合部位(Fab)。"
+            },
+            {
+                q: "IgG分子含有兩條重鏈及兩條輕鏈，鏈與鏈之間是以何種鍵結相連接？",
+                opts: ["氫鍵", "雙硫鍵", "離子鍵", "共價鍵"],
+                ansIndex: 1,
+                exp: "💡 核心判斷：抗體的重鏈與重鏈之間、重鏈與輕鏈之間，主要依靠「雙硫鍵」(Disulfide bond)連接以穩定結構。"
+            },
+            {
+                q: "抗體辨識抗原的專一性由何者決定？",
+                opts: ["只由抗體重鏈的蛋白序列所形成的三度空間決定", "只由抗體輕鏈的蛋白序列所形成的三度空間決定", "由抗體重鏈與輕鏈的蛋白序列共同形成的三度空間所決定", "由抗體蛋白本身結構的彎曲彈性而決定"],
+                ansIndex: 2,
+                exp: "💡 核心判斷：抗原結合位是由重鏈和輕鏈的「變異區(V區)」共同構成的三度空間結構決定。"
+            },
+            {
+                q: "抗體與病毒抗原結合進而對抗入侵病毒，下列何者為其與抗原的結合部位？",
+                opts: ["變異區(V區)", "絞鏈區", "重鏈分子的固定區(C區)", "輕鏈分子的固定區(C區)"],
+                ansIndex: 0,
+                exp: "💡 核心判斷：看到辨識、結合抗原的部位，即為變異區(V區)；恆定區(C區)則負責生物學效應(如活化補體)。"
+            },
+            {
+                q: "抗體分子的哪個區域具有與補體結合的功能？",
+                opts: ["重鏈恆定區", "輕鏈恆定區", "重鏈變異區", "輕鏈變異區"],
+                ansIndex: 0,
+                exp: "💡 核心判斷：補體結合位位於抗體的Fc段，也就是「重鏈恆定區」(CH2結構域)。"
+            },
+            {
+                q: "有關抗原與抗體互相結合時之敘述，下列何者錯誤？",
+                opts: ["抗原分子以抗原表位和抗體結合", "抗體分子以抗原結合位Fab和抗原結合", "彼此間必須形成雙硫共價鍵，才能緊密結合", "結合力均非共價鍵"],
+                ansIndex: 2,
+                exp: "💡 核心判斷：抗原抗體結合是可逆的，依靠的是「非共價鍵」(如氫鍵、靜電引力、凡得瓦力)，不需要形成共價鍵(雙硫鍵)。"
+            },
+            {
+                q: "在B淋巴細胞的發育過程中，最早表現的免疫球蛋白基因是：",
+                opts: ["重鏈μ", "重鏈γ", "重鏈κ", "重鏈λ"],
+                ansIndex: 0,
+                exp: "💡 核心判斷：B細胞發育初期(Pre-B cell)，最早重組並表現出來的是μ重鏈(對應IgM)。"
+            },
+            {
+                q: "有關γ-球蛋白(γ-globulins)的敘述，下列何者正確？",
+                opts: ["存在血清中", "是血漿中最多的蛋白質", "能參與凝血反應", "構成血液膠體滲透壓的主要成分"],
+                ansIndex: 0,
+                exp: "💡 核心判斷：抗體主要屬於血清蛋白電泳中的γ-球蛋白區帶。\n✅ 存在血清中。\n❌ 血漿中最多、構成滲透壓主要成分的是「白蛋白」。"
+            }
+        ];
+
+        /**
+         * 本次新增的專屬題庫：課程測驗
+         */
+        const COURSE_QUESTIONS = [
+            {
+                q: "半抗原必須與下列何者結合，才能變身為「完全抗原」引起免疫系統產生抗體？",
+                opts: ["載體蛋白質", "干擾素", "補體", "巨噬細胞"],
+                ansIndex: 0,
+                exp: "💡 「載體蛋白質」是正解！半抗原就像個還沒拿到武器的小兵，自己沒辦法引起免疫系統注意。它一定要跟「載體蛋白質」這個大盾牌結合，變身成「完全抗原」，身體才會產生抗體來對付它喔 ！\n❌ 干擾素是用來打病毒的 ；補體是血液裡的幫手 ；巨噬細胞是負責吃細菌的 。"
+            },
+            {
+                q: "抗體結構中，負責抓住特定抗原並決定專一性的部位是？",
+                opts: ["Fab端（可變區）", "Fc端", "雙硫鍵", "木瓜酵素"],
+                ansIndex: 0,
+                exp: "💡 「Fab端（可變區）」是正解！抗體長得像英文字母Y，最上面那兩個端點叫做Fab端，就像抗體的「兩隻手」，專門用來抓住特定的敵人（抗原），決定了專一性 ！\n❌ 下面的Fc端是把手，負責呼叫支援 ；雙硫鍵是綁住抗體的繩子 ；木瓜酵素是實驗室切抗體的剪刀 。"
+            },
+            {
+                q: "超級抗原會引發T細胞大量活化，最可能導致下列何種嚴重的致命疾病？",
+                opts: ["中毒性休克症候群", "新生兒溶血症", "氣喘", "類風濕性關節炎"],
+                ansIndex: 0,
+                exp: "💡 「中毒性休克症候群」是正解！超級抗原就像個亂按警報器的壞蛋，會讓身體裡的T細胞大暴走，引發超級嚴重的「中毒性休克症候群」，這是會致命的喔 ！\n❌ 新生兒溶血症是因為媽媽跟寶寶的Rh血型不合 ；氣喘主要是IgE引起的過敏 。"
+            },
+            {
+                q: "在所有抗體中，唯一可以穿過媽媽胎盤保護胎兒的抗體是？",
+                opts: ["IgG", "IgA", "IgM", "IgE"],
+                ansIndex: 0,
+                exp: "💡 「IgG」是正解！在所有抗體裡面，只有IgG體積夠小，是唯一可以穿過媽媽胎盤的抗體！它就像媽媽給寶寶的隨身護身符，負責保護剛出生的嬰兒 。\n❌ IgA在母乳跟黏膜裡 ；IgM太大隻過不了胎盤 ；IgE是負責管過敏的 。"
+            },
+            {
+                q: "身體初次感染遇到新抗原時，最先產生且活化補體能力最強的抗體是？",
+                opts: ["IgM", "IgG", "IgA", "IgE"],
+                ansIndex: 0,
+                exp: "💡 「IgM」是正解！身體第一次遇到新敵人時，最先派出的先鋒部隊就是IgM！它不只最早出來，呼叫「補體」這個輔助武器的能力也是最強的 。\n❌ 至於IgG是第二次遇到老敵人時才會大量派出的主力 。"
+            },
+            {
+                q: "母乳（特別是初乳）中含量最豐富，能保護嬰兒腸胃道黏膜的抗體是？",
+                opts: ["IgA", "IgG", "IgM", "IgE"],
+                ansIndex: 0,
+                exp: "💡 「IgA」是正解！媽媽的初乳裡面有滿滿的IgA！IgA就像是在寶寶腸胃道塗上一層保護膜，是黏膜防禦的第一道防線 。\n❌ IgG雖然在血液裡最多，但在初乳裡的主角是IgA喔 ；IgE是管過敏的 。"
+            },
+            {
+                q: "與引發氣喘、過敏性鼻炎等過敏反應最直接相關的抗體是？",
+                opts: ["IgE", "IgM", "IgA", "IgG"],
+                ansIndex: 0,
+                exp: "💡 「IgE」是正解！講到過敏，就要立刻想到IgE！當你吸到花粉，IgE就會跑去跟身體裡的「肥大細胞」結合，讓它釋放發炎物質，你就會開始氣喘或流鼻水了 。\n❌ IgM是初期感染的主力 ；IgA是保護黏膜的 。"
+            },
+            {
+                q: "關於次級免疫反應的敘述，下列何者正確？",
+                opts: ["會迅速產生大量IgG", "主要產生IgM", "潛伏期比初次反應長", "不會產生記憶細胞"],
+                ansIndex: 0,
+                exp: "💡 「次級免疫反應會迅速產生大量IgG」是正解！當身體「第二次」遇到一模一樣的敵人，因為有記憶B細胞，身體會「非常快速、超大量地製造出IgG」來痛擊敵人，這也是我們打追加疫苗的原因 ！\n❌ 初次反應其實需要時間認識敵人，潛伏期比較長 。"
+            },
+            {
+                q: "若要破壞血清中補體的活性（去活化），標準的加熱條件是？",
+                opts: ["56°C，30分鐘", "37°C，30分鐘", "100°C，5分鐘", "60°C，1小時"],
+                ansIndex: 0,
+                exp: "💡 「56°C，30分鐘」是正解！補體這個幫手非常「怕熱」！只要把血清拿去加熱到56°C，維持30分鐘，補體的戰鬥力就會被徹底破壞，這是護理國考必背數字 ！\n❌ 37°C只是人體正常的溫度，補體這時候可活躍了。"
+            },
+            {
+                q: "補體系統中，主要負責「調理作用」（Opsonization）以促進巨噬細胞吞噬的成分是？",
+                opts: ["C3b", "C3a", "C5a", "MAC"],
+                ansIndex: 0,
+                exp: "💡 「C3b」是正解！C3b的工作叫做「調理作用」，就像在細菌身上塗滿甜甜的果醬，讓巨噬細胞覺得細菌很好吃，一口吞掉 ！\n❌ C3a跟C5a是負責大叫呼叫支援的（引發發炎） ；MAC是直接在細菌身上打洞的 。"
+            },
+            {
+                q: "補體活化後，會形成「攻膜複合物（MAC）」在細菌細胞膜上打洞，其主要組成成分為？",
+                opts: ["C5b～C9", "C1～C4", "C3b", "C3a與C5a"],
+                ansIndex: 0,
+                exp: "💡 「C5b～C9」是正解！這幾個補體兄弟會合體，變成一個叫做攻膜複合物（MAC）的超級武器。顧名思義，它會直接在細菌的細胞膜上「打洞」，讓細菌破掉死翹翹 。\n❌ C1～C4只是前面的準備動作 ；C3b是塗果醬的 。"
+            },
+            {
+                q: "當細胞被病毒感染時，會釋放哪種物質來警告鄰近健康細胞，非專一性地阻止病毒複製？",
+                opts: ["干擾素（IFN）", "介白素（IL）", "腫瘤壞死因子（TNF）", "補體"],
+                ansIndex: 0,
+                exp: "💡 「干擾素（IFN）」是正解！看名字就知道它是專門「干擾」病毒的！當細胞被病毒感染，就會釋放干擾素警告旁邊健康的鄰居趕快防禦，非專一性地阻止病毒複製 。\n❌ 介白素跟腫瘤壞死因子主要是讓你發燒跟發炎的 。"
+            },
+            {
+                q: "關於腫瘤壞死因子（TNF-α）的作用，下列敘述何者正確？",
+                opts: ["促進發炎、引起發燒，過量時可與敗血性休克有關", "主要功能為專一性抑制病毒複製", "由B細胞分泌產生抗體", "主要負責調理細菌"],
+                ansIndex: 0,
+                exp: "💡 「促進發炎、引起發燒，過量時可與敗血性休克有關」是正解！腫瘤壞死因子（TNF-α）主要由巨噬細胞分泌，它會促進發炎、讓你發燒；如果分泌太多，甚至會引發嚴重的「敗血性休克」，還會叫細胞去自殺 。\n❌ 抑制病毒那是干擾素的工作 。"
+            },
+            {
+                q: "免疫力低下的病人（如免疫缺失患者），絕對禁忌施打下列哪一種疫苗？",
+                opts: ["活疫苗", "死疫苗", "類毒素", "次單位疫苗"],
+                ansIndex: 0,
+                exp: "💡 「活疫苗」是正解！活疫苗裡面的病菌雖然被削弱了，但「它還活著」！所以如果病人的免疫力很差，打進去反而會真的生病，這是絕對禁忌 ！\n❌ 死疫苗和類毒素因為病菌都死了或沒毒了，相對安全很多 。"
+            },
+            {
+                q: "為什麼有些活疫苗不建議在嬰兒剛出生時立刻施打？",
+                opts: ["母體傳來的IgG可能中和疫苗，使其失效", "容易引起嬰兒嚴重的過敏反應", "會加重新生兒黃疸", "新生兒的T細胞會破壞疫苗"],
+                ansIndex: 0,
+                exp: "💡 「母體傳來的IgG可能中和疫苗...」是正解！剛出生的小嬰兒，體內還有媽媽透過胎盤給的IgG抗體。如果這時候打活疫苗，媽媽的IgG會以為有壞人，直接把疫苗給「中和」掉，疫苗就白打了 ！\n❌ 跟過度反應或黃疸沒有關係喔。"
+            },
+            {
+                q: "關於O型血的抗原與抗體特徵，下列敘述何者正確？",
+                opts: ["無A、B抗原；有抗A與抗B抗體", "有A與B抗原；無抗A與抗B抗體", "有A抗原；有抗B抗體", "有B抗原；有抗A抗體"],
+                ansIndex: 0,
+                exp: "💡 「無A、B抗原；有抗A與抗B抗體」是正解！O型血的人，紅血球表面光溜溜的，沒有A也沒有B抗原。但是！他們的血清裡面天生就自備了「抗A與抗B抗體」隨時待命 。\n❌ 有A與B抗原但沒有抗體的是AB型喔 。"
+            },
+            {
+                q: "哪一種血型組合最容易引發新生兒溶血症？",
+                opts: ["母親Rh(-)；胎兒Rh(+)", "母親Rh(+)；胎兒Rh(-)", "母親Rh(+)；胎兒Rh(+)", "母親Rh(-)；胎兒Rh(-)"],
+                ansIndex: 0,
+                exp: "💡 「母親Rh(-)；胎兒Rh(+)」是正解！這是國考必考的母子血型不合：如果媽媽是陰性Rh(-)，卻懷了陽性Rh(+)的寶寶，媽媽身體會產生IgG抗體。如果下一胎又是Rh(+)，抗體就會穿過胎盤去攻擊寶寶的紅血球造成溶血 。"
+            },
+            {
+                q: "婦產科檢查母體或胎兒體內是否有「抗Rh抗體」等不完全抗體，最經典的檢驗是？",
+                opts: ["庫氏試驗", "肥達氏試驗", "外裴氏試驗", "錫克試驗"],
+                ansIndex: 0,
+                exp: "💡 「庫氏試驗」是正解！婦產科要檢查媽媽或寶寶體內有沒有「抗Rh抗體」，最經典的招式就是抽血做庫氏試驗 。\n❌ 肥達氏試驗是驗傷寒的 ；外裴氏試驗是驗立克次菌的 。"
+            },
+            {
+                q: "關於沉澱反應與凝集反應的比較，下列何者正確？",
+                opts: ["沉澱反應的抗原是可溶性的", "凝集反應的抗原是可溶性的", "ABO血型檢定屬於沉澱反應", "沉澱反應針對有實體的顆粒"],
+                ansIndex: 0,
+                exp: "💡 「沉澱反應的抗原是可溶性的」是正解！沉澱反應主要針對「可溶性」的抗原（就像糖溶在水裡看不見，例如毒素）；加上抗體後才會結塊掉下來 。\n❌ 凝集反應則是針對「有實體」的顆粒（像細菌或紅血球），ABO血型檢定就是凝集反應 。"
+            },
+            {
+                q: "下列何種檢驗屬於「中和試驗」，用於測試體內是否具備對抗特定毒素的抗體？",
+                opts: ["狄克試驗", "庫氏試驗", "VDRL試驗", "ABO血型檢定"],
+                ansIndex: 0,
+                exp: "💡 「狄克試驗」是正解！中和試驗顧名思義，就是看身體裡的抗體能不能把壞毒素給「中和」掉！最經典的例子就是測猩紅熱的狄克試驗跟測白喉的錫克試驗 。\n❌ VDRL則是梅毒的沉澱反應 。"
+            }
+        ];
+
+        /**
+         * 題庫總管理
+         */
+        const QUESTION_BANKS = {
+            course: { name: '課程測驗', data: COURSE_QUESTIONS },
+            advanced: { name: '進階測驗', data: ADVANCED_QUESTIONS }
+        };
+
+        /**
+         * 系統狀態變數
+         */
+        const state = {
+            studentName: '',
+            studentId: '',
+            selectedBank: 'course', // 預設題庫
+            quizCount: 0,
+            isRetryMode: false,
+            activeQuestions: [], // 當前正在測驗的題目陣列 (已洗牌)
+            currentQIndex: 0,
+            wrongHistory: [],    // 記錄答錯的原始題目物件
+            score: 0,
+            isAnswering: false   // 防止連點
+        };
+
+        /**
+         * DOM 元素選取
+         */
+        const els = {
+            sections: {
+                login: document.getElementById('login-section'),
+                quiz: document.getElementById('quiz-section'),
+                result: document.getElementById('result-section')
+            },
+            login: {
+                form: document.getElementById('login-form'),
+                name: document.getElementById('student-name'),
+                id: document.getElementById('student-id')
+            },
+            header: {
+                info: document.getElementById('header-user-info'),
+                name: document.getElementById('display-header-name'),
+                id: document.getElementById('display-header-id'),
+                bankName: document.getElementById('display-header-bank') // 新增題庫顯示
+            },
+            quiz: {
+                modeBadge: document.getElementById('quiz-mode-badge'),
+                currentNum: document.getElementById('current-question-num'),
+                totalNum: document.getElementById('total-question-num'),
+                questionText: document.getElementById('question-text'),
+                optionsContainer: document.getElementById('options-container')
+            },
+            result: {
+                name: document.getElementById('result-name'),
+                id: document.getElementById('result-id'),
+                modeTag: document.getElementById('result-mode-tag'),
+                countTag: document.getElementById('result-count-tag'),
+                bankTag: document.getElementById('result-bank-tag'),
+                score: document.getElementById('result-score'),
+                correctCount: document.getElementById('result-correct-count'),
+                wrongCount: document.getElementById('result-wrong-count'),
+                msg: document.getElementById('encouragement-msg'),
+                wrongContainer: document.getElementById('wrong-questions-container'),
+                wrongList: document.getElementById('wrong-questions-list'),
+                btnRetry: document.getElementById('btn-retry-wrong'),
+                btnRestart: document.getElementById('btn-restart-full'),
+                btnHome: document.getElementById('btn-go-home'),
+                uploadStatus: document.getElementById('upload-status') // 新增上傳狀態文字
+            }
+        };
+
+        /**
+         * 呼叫 Google Apps Script 發送成績 (fetch)
+         */
+        async function submitScoreToGoogle(scoreData) {
+            if (!GOOGLE_SCRIPT_URL) {
+                console.log("未設定 GOOGLE_SCRIPT_URL，略過成績上傳");
+                return;
+            }
+
+            // UI 顯示上傳中
+            els.result.uploadStatus.classList.remove('hidden');
+            els.result.uploadStatus.innerHTML = '<span class="text-sky-600 animate-pulse">⏳ 成績同步至雲端中...</span>';
+
+            try {
+                const response = await fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    // 將物件轉為字串，並設定 Content-Type 為 text/plain 避免觸發 CORS 預檢請求(Preflight)
+                    body: JSON.stringify(scoreData),
+                    headers: {
+                        'Content-Type': 'text/plain;charset=utf-8',
+                    }
+                });
+
+                const result = await response.json();
+                if (result.status === 'success') {
+                    els.result.uploadStatus.innerHTML = '<span class="text-emerald-600">✅ 成績已自動記錄給老師</span>';
+                } else {
+                    throw new Error(result.message);
+                }
+            } catch (error) {
+                console.error('成績上傳失敗:', error);
+                els.result.uploadStatus.innerHTML = '<span class="text-rose-500">⚠️ 同步失敗，請截圖本畫面回報</span>';
+            }
+        }
+
+        /**
+         * 陣列洗牌工具函數 (Fisher-Yates Shuffle)
+         */
+        function shuffleArray(array) {
+            const arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        /**
+         * 顯示特定區塊
+         */
+        function showSection(sectionId) {
+            Object.values(els.sections).forEach(sec => sec.classList.add('hidden'));
+            els.sections[sectionId].classList.remove('hidden');
+        }
+
+        /**
+         * 初始化/開始測驗
+         * @param {boolean} retryMode 是否為錯題重做模式
+         */
+        function startQuiz(retryMode = false) {
+            state.quizCount++;
+            state.isRetryMode = retryMode;
+            state.currentQIndex = 0;
+            state.wrongHistory = []; // 清空本次測驗的錯題紀錄
+            state.isAnswering = false;
+
+            // 1. 決定題庫並打亂「題目順序」
+            const currentBankData = QUESTION_BANKS[state.selectedBank].data;
+            const sourceQuestions = retryMode ? state.lastWrongHistory : currentBankData;
+            state.activeQuestions = shuffleArray(sourceQuestions);
+
+            // 2. 更新 UI 狀態
+            els.quiz.modeBadge.textContent = retryMode ? '錯題重做' : QUESTION_BANKS[state.selectedBank].name;
+            els.quiz.modeBadge.className = retryMode 
+                ? 'bg-rose-100 text-rose-700 text-xs font-bold px-3 py-1 rounded-full'
+                : 'bg-indigo-100 text-indigo-700 text-xs font-bold px-3 py-1 rounded-full';
+            
+            els.quiz.totalNum.textContent = state.activeQuestions.length;
+
+            showSection('quiz');
+            renderQuestion();
+        }
+
+        /**
+         * 渲染單一題目
+         */
+        function renderQuestion() {
+            state.isAnswering = false;
+            const currentQ = state.activeQuestions[state.currentQIndex];
+            
+            // 更新進度
+            els.quiz.currentNum.textContent = state.currentQIndex + 1;
+            els.quiz.questionText.textContent = currentQ.q;
+
+            // 處理選項打亂與追蹤正確答案索引
+            // 將原選項映射成帶有原始索引的物件陣列
+            const optionsWithOriginalIndex = currentQ.opts.map((optText, index) => ({
+                text: optText,
+                originalIndex: index
+            }));
+
+            // 打亂「選項順序」
+            const shuffledOptions = shuffleArray(optionsWithOriginalIndex);
+
+            // 清空舊選項
+            els.quiz.optionsContainer.innerHTML = '';
+
+            // 產生按鈕
+            shuffledOptions.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                // 預設樣式：灰色邊框、hover轉淺藍
+                btn.className = 'w-full text-left p-4 rounded-xl border-2 border-slate-200 hover:border-medical hover:bg-medical-light text-slate-700 font-medium transition-all duration-200 group relative';
+                
+                // 選項文字排版 (加入 A, B, C, D 標籤視覺效果，不影響邏輯)
+                const labels = ['A', 'B', 'C', 'D'];
+                btn.innerHTML = `
+                    <div class="flex items-center gap-3 pointer-events-none">
+                        <span class="flex-shrink-0 w-8 h-8 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center font-bold text-sm group-hover:bg-medical group-hover:text-white transition-colors">${labels[idx]}</span>
+                        <span class="flex-grow">${opt.text}</span>
+                    </div>
+                `;
+
+                // 綁定點擊事件
+                btn.onclick = () => handleAnswerSelect(btn, opt.originalIndex, currentQ);
+                els.quiz.optionsContainer.appendChild(btn);
+            });
+        }
+
+        /**
+         * 處理作答邏輯
+         */
+        function handleAnswerSelect(btnElement, selectedOriginalIndex, currentQObj) {
+            if (state.isAnswering) return; // 防連點
+            state.isAnswering = true;
+
+            const isCorrect = selectedOriginalIndex === currentQObj.ansIndex;
+
+            // 1. UI 反饋 (點擊後無論對錯皆變藍色標記，不提示對錯)
+            // 移除所有按鈕的 hover 效果並鎖定
+            const allBtns = els.quiz.optionsContainer.querySelectorAll('button');
+            allBtns.forEach(b => {
+                b.classList.remove('hover:border-medical', 'hover:bg-medical-light');
+                b.classList.add('opacity-70', 'cursor-not-allowed');
+                b.onclick = null; // 移除事件
+            });
+
+            // 針對選中的按鈕套用「已選擇」的藍色樣式
+            btnElement.classList.remove('border-slate-200', 'opacity-70');
+            btnElement.classList.add('border-medical', 'bg-medical-light', 'ring-2', 'ring-medical', 'ring-opacity-50', 'opacity-100');
+            const labelSpan = btnElement.querySelector('span');
+            labelSpan.classList.remove('bg-slate-100', 'text-slate-500');
+            labelSpan.classList.add('bg-medical', 'text-white');
+
+            // 2. 紀錄錯題
+            if (!isCorrect) {
+                state.wrongHistory.push(currentQObj);
+            }
+
+            // 3. 延遲 400 毫秒進入下一題
+            setTimeout(() => {
+                if (state.currentQIndex < state.activeQuestions.length - 1) {
+                    state.currentQIndex++;
+                    renderQuestion();
+                } else {
+                    finishQuiz();
+                }
+            }, 400);
+        }
+
+        /**
+         * 測驗結束結算
+         */
+        function finishQuiz() {
+            // 保存這次的錯題清單給重做按鈕使用
+            state.lastWrongHistory = [...state.wrongHistory];
+
+            const totalQ = state.activeQuestions.length;
+            const wrongCount = state.wrongHistory.length;
+            const correctCount = totalQ - wrongCount;
+            const scorePercent = Math.round((correctCount / totalQ) * 100);
+
+            // 渲染基本資訊
+            els.result.name.textContent = state.studentName;
+            els.result.id.textContent = state.studentId;
+            els.result.score.textContent = scorePercent;
+            els.result.correctCount.textContent = correctCount;
+            els.result.wrongCount.textContent = wrongCount;
+
+            // 隱藏/重置上一次的 API 狀態 UI
+            els.result.uploadStatus.classList.add('hidden');
+            els.result.uploadStatus.innerHTML = '';
+
+            // 渲染動態標籤
+            if(els.result.bankTag) els.result.bankTag.textContent = QUESTION_BANKS[state.selectedBank].name;
+            els.result.modeTag.textContent = state.isRetryMode ? '錯題重做得分' : '完整測驗得分';
+            els.result.modeTag.className = state.isRetryMode 
+                ? 'bg-rose-100 text-rose-700 text-xs font-bold px-3 py-1 rounded-full'
+                : 'bg-indigo-100 text-indigo-700 text-xs font-bold px-3 py-1 rounded-full';
+            
+            els.result.countTag.textContent = `測驗次數：第 ${state.quizCount} 次`;
+
+            // 根據分數給予鼓勵語
+            let msgHTML = '';
+            if (scorePercent === 100) {
+                msgHTML = '🎉 完美無瑕！你的免疫學知識堅不可摧！';
+                els.result.msg.className = 'mt-8 p-4 bg-emerald-50 rounded-xl text-center text-lg font-bold text-emerald-700 border border-emerald-200';
+            } else if (scorePercent >= 80) {
+                msgHTML = '👍 表現優異！你已經掌握了大部分的核心概念！';
+                els.result.msg.className = 'mt-8 p-4 bg-sky-50 rounded-xl text-center text-lg font-bold text-sky-700 border border-sky-200';
+            } else if (scorePercent >= 60) {
+                msgHTML = '💪 再接再厲！基礎不錯，針對錯題複習會更好喔！';
+                els.result.msg.className = 'mt-8 p-4 bg-amber-50 rounded-xl text-center text-lg font-bold text-amber-700 border border-amber-200';
+            } else {
+                msgHTML = '💡 請不要灰心！學習是循序漸進的，仔細看看錯題解析吧！';
+                els.result.msg.className = 'mt-8 p-4 bg-rose-50 rounded-xl text-center text-lg font-bold text-rose-700 border border-rose-200';
+            }
+            els.result.msg.innerHTML = msgHTML;
+
+            // 渲染錯題解析區塊
+            if (wrongCount > 0) {
+                els.result.wrongContainer.classList.remove('hidden');
+                els.result.btnRetry.classList.remove('hidden');
+                els.result.wrongList.innerHTML = '';
+
+                state.wrongHistory.forEach((qObj, index) => {
+                    const correctAnswerText = qObj.opts[qObj.ansIndex];
+                    // 將解析中的換行符號轉為 <br>
+                    const formattedExp = qObj.exp.replace(/\n/g, '<br>');
+
+                    const item = document.createElement('div');
+                    item.className = 'bg-slate-50 rounded-xl p-5 border border-slate-200';
+                    item.innerHTML = `
+                        <div class="font-bold text-slate-800 mb-2 flex gap-2">
+                            <span class="text-rose-500">Q.</span>
+                            <span>${qObj.q}</span>
+                        </div>
+                        <div class="text-emerald-700 bg-emerald-50 px-3 py-2 rounded-lg text-sm font-bold mb-3 inline-block border border-emerald-100">
+                            正確解答：${correctAnswerText}
+                        </div>
+                        <div class="text-slate-600 text-sm leading-relaxed border-t border-slate-200 pt-3">
+                            ${formattedExp}
+                        </div>
+                    `;
+                    els.result.wrongList.appendChild(item);
+                });
+            } else {
+                els.result.wrongContainer.classList.add('hidden');
+                els.result.btnRetry.classList.add('hidden'); // 全對不顯示錯題重做
+            }
+
+            showSection('result');
+
+            // 嚴格遵守：使用 scrollTop = 0 捲動置頂
+            document.documentElement.scrollTop = 0;
+            document.body.scrollTop = 0;
+
+            // =====================================
+            // ★ 將成績打包並傳送給 Google Apps Script
+            // =====================================
+            const scorePayload = {
+                name: state.studentName,
+                id: state.studentId,
+                bank: QUESTION_BANKS[state.selectedBank].name,
+                mode: state.isRetryMode ? '錯題重做' : '完整測驗',
+                score: scorePercent,
+                correct: correctCount,
+                wrong: wrongCount,
+                quizCount: state.quizCount
+            };
+            submitScoreToGoogle(scorePayload);
+        }
+
+        /**
+         * 事件監聽綁定
+         */
+        els.login.form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const nameInput = els.login.name.value.trim();
+            const idInput = els.login.id.value.trim();
+            
+            // 取得選取的題庫
+            const selectedBankRadio = document.querySelector('input[name="quiz-bank"]:checked');
+
+            if (nameInput && idInput && selectedBankRadio) {
+                state.studentName = nameInput;
+                state.studentId = idInput;
+                state.selectedBank = selectedBankRadio.value;
+                state.quizCount = 0; // 更換題庫或重新登入時重置次數
+                
+                // 顯示 Header 資訊
+                if(els.header.bankName) els.header.bankName.textContent = QUESTION_BANKS[state.selectedBank].name;
+                els.header.name.textContent = state.studentName;
+                els.header.id.textContent = state.studentId;
+                els.header.info.classList.remove('hidden');
+
+                startQuiz(false); // 首次開始完整測驗
+            }
+        });
+
+        els.result.btnRetry.addEventListener('click', () => {
+            startQuiz(true); // 開始錯題重做
+        });
+
+        els.result.btnRestart.addEventListener('click', () => {
+            startQuiz(false); // 重新完整測驗
+        });
+
+        if(els.result.btnHome) {
+            els.result.btnHome.addEventListener('click', () => {
+                showSection('login');
+                // 將捲軸移至最上
+                document.documentElement.scrollTop = 0;
+                document.body.scrollTop = 0;
+            });
+        }
+
+    </script>
+</body>
+</html>
